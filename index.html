@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ギャップ萌えアンケート</title>
+<style>
+  /* ── トークンシステム ── */
+  :root {
+    --bg:        #0F0F14;
+    --surface:   #17171F;
+    --surface2:  #1E1E2A;
+    --border:    #2E2E42;
+    --accent:    #A78BFA;     /* 紫：萌え・感情 */
+    --accent2:   #F472B6;     /* ピンク：ギャップ */
+    --accent3:   #38BDF8;     /* 水色：分析・客観 */
+    --text:      #E8E8F0;
+    --text-sub:  #8888A8;
+    --text-dim:  #55556A;
+    --success:   #4ADE80;
+    --warn:      #FB923C;
+
+    --radius:    12px;
+    --radius-sm: 6px;
+    --gap:       24px;
+    --font-jp:   'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-jp);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── ヘッダー ── */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,15,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-header h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-label { font-size: 12px; color: var(--text-sub); }
+  .progress-bar {
+    width: 160px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── メインコンテナ ── */
+  .main { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ── セクション ── */
+  .section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── フェーズラベル ── */
+  .phase-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(167,139,250,0.1);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 20px;
+    padding: 4px 14px;
+    margin-bottom: 20px;
+  }
+  .phase-label .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* ── セクションタイトル ── */
+  .section-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .section-desc {
+    color: var(--text-sub);
+    font-size: 14px;
+    margin-bottom: 32px;
+    line-height: 1.8;
+  }
+
+  /* ── 画像比較エリア ── */
+  .image-compare {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .image-compare.side-by-side { grid-template-columns: 1fr 1fr; }
+  .image-compare.three-col    { grid-template-columns: 1fr 1fr 1fr; }
+  .image-compare.single       { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto 32px; }
+
+  .img-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .img-card:hover { border-color: var(--accent); }
+  .img-card.selected {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 2px rgba(244,114,182,0.2);
+  }
+
+  .img-label {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .img-label.original { color: var(--accent3); }
+  .img-label.soft     { color: #86EFAC; }
+  .img-label.medium   { color: var(--accent2); }
+  .img-label.strong   { color: var(--warn); }
+  .img-label .badge {
+    font-size: 10px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+  }
+
+  .img-placeholder {
+    aspect-ratio: 3/4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+  }
+  .img-placeholder .icon { font-size: 36px; opacity: 0.4; }
+  .img-placeholder small { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+  /* 実際の画像が入ったとき用 */
+  .img-placeholder img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* ── タイマー表示 ── */
+  .timer-wrap {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .timer-ring {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--accent2);
+    font-weight: 600;
+  }
+  .timer-count {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--accent2);
+    min-width: 28px;
+    text-align: center;
+  }
+  .timer-note { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+  /* ── 設問カード ── */
+  .q-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .q-card.highlight {
+    border-color: rgba(167,139,250,0.35);
+    background: linear-gradient(135deg, rgba(167,139,250,0.05), var(--surface));
+  }
+
+  .q-id {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .q-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .q-note {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  /* ── セマンティック差分スケール ── */
+  .sd-scale {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .sd-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 110px;
+    align-items: center;
+    gap: 16px;
+  }
+  .sd-label-left  { text-align: right; font-size: 13px; font-weight: 600; color: var(--text); }
+  .sd-label-right { text-align: left;  font-size: 13px; font-weight: 600; color: var(--text-sub); }
+
+  .sd-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .sd-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-sub);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sd-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(167,139,250,0.1);
+  }
+  .sd-btn.selected {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.12);
+  }
+  /* 左側（ポジティブ）選択時はピンク */
+  .sd-btn[data-val="1"].selected,
+  .sd-btn[data-val="2"].selected { background: var(--accent2); border-color: var(--accent2); }
+
+  /* ── チェックボックス・ラジオ ── */
+  .choice-list { display: flex; flex-direction: column; gap: 10px; }
+  .choice-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+  }
+  .choice-item:hover { border-color: var(--accent); background: rgba(167,139,250,0.06); }
+  .choice-item.selected { border-color: var(--accent2); background: rgba(244,114,182,0.08); }
+  .choice-item input { display: none; }
+  .choice-check {
+    width: 20px; height: 20px; flex-shrink: 0;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .choice-item.radio .choice-check { border-radius: 50%; }
+  .choice-item.selected .choice-check {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #fff;
+  }
+
+  /* ── 強制選択ランキング ── */
+  .rank-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .rank-label { font-size: 12px; font-weight: 700; color: var(--text-sub); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .rank-options {
+    display: flex;
+    gap: 10px;
+  }
+  .rank-btn {
+    flex: 1;
+    padding: 10px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-sub);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .rank-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .rank-btn.soft.selected   { border-color: #86EFAC; background: rgba(134,239,172,0.1); color: #86EFAC; }
+  .rank-btn.medium.selected { border-color: var(--accent2); background: rgba(244,114,182,0.1); color: var(--accent2); }
+  .rank-btn.strong.selected { border-color: var(--warn); background: rgba(251,146,60,0.1); color: var(--warn); }
+
+  /* ── 自由記述 ── */
+  .free-text {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-jp);
+    font-size: 14px;
+    padding: 14px 16px;
+    resize: vertical;
+    min-height: 90px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .free-text:focus { border-color: var(--accent); }
+  .free-text::placeholder { color: var(--text-dim); }
+
+  /* ── ブロックヘッダー ── */
+  .block-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 36px 0 20px;
+  }
+  .block-tag {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    padding: 5px 14px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+  .block-tag.a { background: rgba(56,189,248,0.15); color: var(--accent3); border: 1px solid rgba(56,189,248,0.3); }
+  .block-tag.b { background: rgba(167,139,250,0.15); color: var(--accent); border: 1px solid rgba(167,139,250,0.3); }
+  .block-tag.c { background: rgba(251,146,60,0.15); color: var(--warn); border: 1px solid rgba(251,146,60,0.3); }
+  .block-tag.d { background: rgba(74,222,128,0.15); color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+  .block-tag.e { background: rgba(244,114,182,0.15); color: var(--accent2); border: 1px solid rgba(244,114,182,0.3); }
+  .block-tag.f { background: rgba(15,15,20,0.5); color: var(--text-sub); border: 1px solid var(--border); }
+
+  .block-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .block-note  { font-size: 12px; color: var(--text-sub); }
+
+  /* ── ナビゲーション ── */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    padding: 12px 32px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    color: var(--text-sub);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  /* ── 完了画面 ── */
+  .complete-wrap {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .complete-icon { font-size: 64px; margin-bottom: 24px; }
+  .complete-title { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+  .complete-desc  { color: var(--text-sub); font-size: 15px; line-height: 1.8; }
+
+  /* ── キャラ情報パネル ── */
+  .char-info-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent3);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    font-size: 14px;
+  }
+  .char-info-panel h3 { font-size: 13px; color: var(--accent3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .char-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .char-info-item { display: flex; gap: 8px; }
+  .char-info-key   { color: var(--text-sub); font-size: 12px; white-space: nowrap; }
+  .char-info-value { color: var(--text); font-size: 13px; font-weight: 600; }
+
+  /* ── 凡例 ── */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-sub); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── 注釈 ── */
+  .notice {
+    display: flex;
+    gap: 10px;
+    background: rgba(167,139,250,0.07);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+  .notice-icon { font-size: 16px; flex-shrink: 0; }
+
+  @media (max-width: 640px) {
+    .image-compare.side-by-side { grid-template-columns: 1fr; }
+    .image-compare.three-col    { grid-template-columns: 1fr; }
+    .sd-row { grid-template-columns: 80px 1fr 80px; gap: 8px; }
+    .sd-btn { width: 30px; height: 30px; font-size: 11px; }
+    .rank-options { flex-direction: column; }
+    .site-header { padding: 12px 16px; }
+    .main { padding: 24px 16px 60px; }
+  }
+
+  .character-image {
+    width: 100%;
+    max-width: 450px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="site-header">
+  <h1>Gap Moe Survey</h1>
+  <div class="progress-wrap">
+    <span class="progress-label" id="prog-label">フェーズ 1 / 5</span>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</header>
+
+<main class="main">
+
+<!-- ========== SECTION 0：イントロ ========== -->
+<div class="section active" id="sec-intro">
+  <div class="phase-label"><span class="dot"></span> はじめに</div>
+  <h2 class="section-title">ギャップ萌え評価アンケート</h2>
+  <p class="section-desc">
+    このアンケートでは，アニメキャラクターの服装変換画像を見て，<br>
+    「ギャップ萌え」に関する印象をお聞きします。<br><br>
+    所要時間は1キャラクターあたり約<strong style="color:var(--accent)">10〜15分</strong>です。<br>
+    直感的な感想を大切にしながら，各設問にお答えください。
+  </p>
+  <div class="notice">
+    <span class="notice-icon">ℹ️</span>
+    <div><strong>ギャップ萌えとは：</strong> キャラクターの普段のイメージ・性格とは異なる服装や行動によって，「意外だけど可愛い・好き」という好意的な感情が生まれる現象のことです。</div>
+  </div>
+  <div class="nav" style="border:none; padding:0; justify-content:flex-end;">
+    <button class="btn btn-primary" onclick="goTo(1)">アンケートを始める →</button>
+  </div>
+</div>
+
+<!-- ========== SECTION 1：キャラクター確認 ========== -->
+<div class="section" id="sec-char">
+  <div class="phase-label"><span class="dot"></span> フェーズ 1 — キャラクターを覚える</div>
+  <h2 class="section-title">キャラクター情報</h2>
+  <p class="section-desc">以下のキャラクター設定と画像をよく確認してください。<br>次のフェーズで服装変換画像と比較します。</p>
+
+  <div class="char-info-panel">
+    <h3>キャラクター設定</h3>
+    <div class="char-info-grid">
+      <div class="char-info-item"><span class="char-info-key">名前</span><span class="char-info-value">鷹宮 凜（たかみや りん）</span></div>
+      <!-- <div class="char-info-item"><span class="char-info-key">役割</span><span class="char-info-value">生徒会長・学年首席</span></div> -->
+      <div class="char-info-item"><span class="char-info-key">性格</span><span class="char-info-value">クール・無口・完璧主義</span></div>
+      <div class="char-info-item"><span class="char-info-key">雰囲気</span><span class="char-info-value">ダーク・シリアス・近寄りがたい</span></div>
+      <!-- <div class="char-info-item"><span class="char-info-key">髪型</span><span class="char-info-value">黒髪ロング（ストレート）</span></div>
+      <div class="char-info-item"><span class="char-info-key">普段の服装</span><span class="char-info-value">黒・紺を基調としたシンプルな制服</span></div> -->
+    </div>
+  </div>
+
+  <!-- 元画像 -->
+  <div class="image-compare single">
+    <div class="img-card">
+      <div class="img-label original">
+        <span>元のキャラクター画像</span>
+        <span class="badge">ORIGINAL</span>
+      </div>
+      <!-- <div class="img-placeholder">
+        <div class="icon">🎨</div>
+        <div>元のキャラクターイラスト</div>
+        <small>（ここに実際の画像を配置）<br>よく観察してください</small>
+      </div> -->
+      <img
+      src="images/input1.png"
+      alt="元のキャラクター画像"
+      class="character-image"
+      >
+    </div>
+  </div>
+
+  <div class="notice">
+    <span class="notice-icon">⏳</span>
+    <div>この画像をよく観察してから次へ進んでください。次のフェーズで服装が変換された画像を評価します。</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(0)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(2)">服装変換画像を見る →</button>
+  </div>
+</div>
+
+<!-- ========== SECTION 2：変換画像・第一印象（1枚ずつ） ========== -->
+<div class="section" id="sec-impression">
+  <div class="phase-label"><span class="dot"></span> フェーズ 2 — 第一印象（soft）</div>
+  <h2 class="section-title">変換画像を見てください</h2>
+  <p class="section-desc">まず数秒だけ見て，直感的な印象を感じてください。その後，設問に回答します。</p>
+
+  <!-- タイマー表示 -->
+  <div class="timer-wrap">
+    <div class="timer-ring">
+      <span>⏱</span>
+      <span class="timer-count" id="timer-count">5</span>
+      <span>秒後に設問が表示されます</span>
+    </div>
+    <div class="timer-note">画像をよく見て，直感的な印象を感じてください</div>
+  </div>
+
+  <!-- 変換後のみ提示（第一印象用） -->
+  <div class="image-compare single" id="single-view">
+    <div class="img-card">
+      <div class="img-label soft">
+        <span>変換後の服装（Soft）</span>
+        <span class="badge">ギャップ弱め</span>
+      </div>
+      <div class="img-placeholder">
+        <div class="icon">✨</div>
+        <div>服装変換後のイラスト</div>
+        <small>soft（軽めのギャップ）バージョン<br>（ここに実際の画像を配置）</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設問エリア（タイマー後に表示） -->
+  <div id="impression-questions" style="display:none;">
+
+    <!-- Block A -->
+    <div class="block-header">
+      <span class="block-tag a">Block A</span>
+      <div>
+        <div class="block-title">変化の知覚</div>
+        <div class="block-note">何がどれだけ変化して見えたか</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">A1</div>
+      <div class="q-text">元の画像と比べて，各要素がどれだけ変化していると感じましたか？</div>
+      <div class="q-note">「変化なし」が1，「大きく変化」が7です。直感的に評価してください。</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">変化なし</span>
+          <div class="sd-buttons" data-name="a1_color">
+            <button class="sd-btn" data-val="1">1</button>
+            <button class="sd-btn" data-val="2">2</button>
+            <button class="sd-btn" data-val="3">3</button>
+            <button class="sd-btn" data-val="4">4</button>
+            <button class="sd-btn" data-val="5">5</button>
+            <button class="sd-btn" data-val="6">6</button>
+            <button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">大きく変化 <small style="color:var(--text-dim);display:block;">色・色調</small></span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">変化なし</span>
+          <div class="sd-buttons" data-name="a1_style">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">大きく変化 <small style="color:var(--text-dim);display:block;">スタイル</small></span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">変化なし</span>
+          <div class="sd-buttons" data-name="a1_atm">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">大きく変化 <small style="color:var(--text-dim);display:block;">雰囲気・印象</small></span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">変化なし</span>
+          <div class="sd-buttons" data-name="a1_exposure">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">大きく変化 <small style="color:var(--text-dim);display:block;">露出度</small></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">A2</div>
+      <div class="q-text">変化していると感じた要素をすべて選んでください。</div>
+      <div class="choice-list" id="a2-list">
+        <label class="choice-item"><input type="checkbox" value="color"><span class="choice-check">✓</span>色・色調</label>
+        <label class="choice-item"><input type="checkbox" value="style"><span class="choice-check">✓</span>スタイル（カジュアル/フォーマル等）</label>
+        <label class="choice-item"><input type="checkbox" value="atmosphere"><span class="choice-check">✓</span>雰囲気・印象</label>
+        <label class="choice-item"><input type="checkbox" value="exposure"><span class="choice-check">✓</span>露出度</label>
+        <label class="choice-item"><input type="checkbox" value="none"><span class="choice-check">✓</span>あまり変化していない</label>
+      </div>
+    </div>
+
+    <!-- Block B -->
+    <div class="block-header">
+      <span class="block-tag b">Block B</span>
+      <div>
+        <div class="block-title">ギャップの方向性</div>
+        <div class="block-note">何から何への変化か</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">B1</div>
+      <div class="q-text">服装の変化はどの方向のギャップでしたか？当てはまるものをすべて選んでください。</div>
+      <div class="choice-list" id="b1-list">
+        <label class="choice-item"><input type="checkbox" value="cool_to_cute"><span class="choice-check">✓</span>クール・シリアス → 可愛い・ガーリー</label>
+        <label class="choice-item"><input type="checkbox" value="dark_to_bright"><span class="choice-check">✓</span>暗い・重い → 明るい・軽い</label>
+        <label class="choice-item"><input type="checkbox" value="formal_to_casual"><span class="choice-check">✓</span>フォーマル → カジュアル</label>
+        <label class="choice-item"><input type="checkbox" value="simple_to_fancy"><span class="choice-check">✓</span>シンプル → 華やか・装飾的</label>
+        <label class="choice-item"><input type="checkbox" value="calm_to_active"><span class="choice-check">✓</span>落ち着いた → 活発・カラフル</label>
+        <label class="choice-item"><input type="checkbox" value="other"><span class="choice-check">✓</span>上記のどれでもない</label>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">B2</div>
+      <div class="q-text">その方向のギャップは，このキャラクターに対して適切でしたか？</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">不適切</span>
+          <div class="sd-buttons" data-name="b2">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">とても適切</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block C（核心） -->
+    <div class="block-header">
+      <span class="block-tag c">Block C — 核心</span>
+      <div>
+        <div class="block-title">寄与要素の特定</div>
+        <div class="block-note">何がギャップ萌えに寄与したか</div>
+      </div>
+    </div>
+
+    <div class="q-card highlight">
+      <div class="q-id">C1</div>
+      <div class="q-text">ギャップ萌えに最も寄与したと思う要素を1つ選んでください。</div>
+      <div class="q-note">「ギャップ萌えを感じさせた一番の要因」は何でしたか？</div>
+      <div class="choice-list" id="c1-list">
+        <label class="choice-item radio"><input type="radio" name="c1" value="color"><span class="choice-check">●</span>色・色調の変化</label>
+        <label class="choice-item radio"><input type="radio" name="c1" value="style"><span class="choice-check">●</span>スタイルの変化（カジュアル/フォーマル等）</label>
+        <label class="choice-item radio"><input type="radio" name="c1" value="atmosphere"><span class="choice-check">●</span>雰囲気・印象の変化</label>
+        <label class="choice-item radio"><input type="radio" name="c1" value="exposure"><span class="choice-check">●</span>露出度の変化</label>
+        <label class="choice-item radio"><input type="radio" name="c1" value="combo"><span class="choice-check">●</span>複数の要素が重なった点全体</label>
+        <label class="choice-item radio"><input type="radio" name="c1" value="none"><span class="choice-check">●</span>特にギャップ萌えは感じなかった</label>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">C2</div>
+      <div class="q-text">変化を見てどう感じましたか？（複数選択可）</div>
+      <div class="choice-list" id="c2-list">
+        <label class="choice-item"><input type="checkbox" value="surprised"><span class="choice-check">✓</span>意外だった（驚き）</label>
+        <label class="choice-item"><input type="checkbox" value="cute"><span class="choice-check">✓</span>可愛いと思った</label>
+        <label class="choice-item"><input type="checkbox" value="match"><span class="choice-check">✓</span>このキャラに意外とマッチしていた</label>
+        <label class="choice-item"><input type="checkbox" value="unfit"><span class="choice-check">✓</span>このキャラらしくないと感じた（ネガティブ）</label>
+        <label class="choice-item"><input type="checkbox" value="too_much"><span class="choice-check">✓</span>変化が大きすぎた</label>
+        <label class="choice-item"><input type="checkbox" value="too_little"><span class="choice-check">✓</span>変化が小さすぎた</label>
+        <label class="choice-item"><input type="checkbox" value="throb"><span class="choice-check">✓</span>ときめいた</label>
+        <label class="choice-item"><input type="checkbox" value="weird"><span class="choice-check">✓</span>違和感があった</label>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">C3</div>
+      <div class="q-text">C1で選んだ要素がギャップ萌えに寄与したと感じた理由を教えてください。</div>
+      <textarea id="c3_reason" class="free-text" placeholder="例：普段クールなキャラがピンクの服を着ているのが意外で可愛かった..."></textarea>
+    </div>
+
+    <!-- Block D -->
+    <div class="block-header">
+      <span class="block-tag d">Block D</span>
+      <div>
+        <div class="block-title">同一人物性・変化量</div>
+        <div class="block-note">キャラクターの一貫性と変化の適切さ</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">D1</div>
+      <div class="q-text">服装が変わっても，同じキャラクターだと分かりましたか？</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">すぐ分かった</span>
+          <div class="sd-buttons" data-name="d1_id">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">別人に見えた</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">D2</div>
+      <div class="q-text">「同じキャラクターだと分かること」はギャップ萌えを感じる上で重要でしたか？</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">重要でなかった</span>
+          <div class="sd-buttons" data-name="d2">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button>
+          </div>
+          <span class="sd-label-right">とても重要だった</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">D3</div>
+      <div class="q-text">服装の変化量はどう感じましたか？</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">変わりすぎ</span>
+          <div class="sd-buttons" data-name="d3">
+            <button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button>
+          </div>
+          <span class="sd-label-right">変わらなすぎ <small style="color:var(--text-dim);display:block;">3＝ちょうどよい</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block E（萌えスコア） -->
+    <div class="block-header">
+      <span class="block-tag e">Block E — ゲート指標</span>
+      <div>
+        <div class="block-title">萌え受容度（総合評価）</div>
+        <div class="block-note">最初に見たときの印象を思い出して回答してください</div>
+      </div>
+    </div>
+
+    <div class="q-card highlight">
+      <div class="q-id">E1</div>
+      <div class="q-text">この服装変換を見て，どう感じましたか？</div>
+      <div class="q-note">数値が小さいほど左の言葉に近い印象です。直感的に回答してください。</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">萌えた</span>
+          <div class="sd-buttons" data-name="e1_moe"><button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button></div>
+          <span class="sd-label-right">萌えなかった</span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">ときめいた</span>
+          <div class="sd-buttons" data-name="e1_throb"><button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button></div>
+          <span class="sd-label-right">ときめかなかった</span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">好きと思った</span>
+          <div class="sd-buttons" data-name="e1_like"><button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button></div>
+          <span class="sd-label-right">好きでない</span>
+        </div>
+        <div class="sd-row">
+          <span class="sd-label-left">可愛いと思った</span>
+          <div class="sd-buttons" data-name="e1_cute"><button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button></div>
+          <span class="sd-label-right">可愛くない</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-id">E2</div>
+      <div class="q-text">このキャラクターへの好感度は変化しましたか？</div>
+      <div class="sd-scale">
+        <div class="sd-row">
+          <span class="sd-label-left">より好きになった</span>
+          <div class="sd-buttons" data-name="e2"><button class="sd-btn" data-val="1">1</button><button class="sd-btn" data-val="2">2</button><button class="sd-btn" data-val="3">3</button><button class="sd-btn" data-val="4">4</button><button class="sd-btn" data-val="5">5</button><button class="sd-btn" data-val="6">6</button><button class="sd-btn" data-val="7">7</button></div>
+          <span class="sd-label-right">好きでなくなった</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /impression-questions -->
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(1)">← 戻る</button>
+    <button class="btn btn-primary" id="btn-next-impression" onclick="goTo(3)" disabled>次の画像へ（medium）→</button>
+  </div>
+</div>
+
+<!-- ========== SECTION 3：比較評価（3枚並列） ========== -->
+<div class="section" id="sec-compare">
+  <div class="phase-label"><span class="dot"></span> フェーズ 4 — 3枚の比較</div>
+  <h2 class="section-title">3種類の変換画像を比べてください</h2>
+  <p class="section-desc">soft・medium・strongの3枚を並べて表示します。<br>全体を見比べながら回答してください。</p>
+
+  <!-- 元画像＋3枚並列 -->
+  <div style="margin-bottom:12px;">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#86EFAC"></span>soft（ギャップ弱め）</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span>medium（ギャップ中程度）</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--warn)"></span>strong（ギャップ強め）</div>
+    </div>
+  </div>
+
+  <!-- 元画像（小サムネイル） -->
+  <div style="margin-bottom:16px;">
+    <div class="img-card" style="max-width:200px;">
+      <div class="img-label original"><span>元画像（参考）</span></div>
+      <div class="img-placeholder" style="aspect-ratio:3/4;">
+        <div class="icon" style="font-size:24px;">🎨</div>
+        <small>元のキャラ画像</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="image-compare three-col">
+    <div class="img-card">
+      <div class="img-label soft"><span>Soft</span><span class="badge">ギャップ弱め</span></div>
+      <div class="img-placeholder">
+        <div class="icon">✨</div>
+        <div>Soft版</div>
+        <small>軽めのギャップ</small>
+      </div>
+    </div>
+    <div class="img-card">
+      <div class="img-label medium"><span>Medium</span><span class="badge">ギャップ中程度</span></div>
+      <div class="img-placeholder">
+        <div class="icon">💫</div>
+        <div>Medium版</div>
+        <small>中程度のギャップ</small>
+      </div>
+    </div>
+    <div class="img-card">
+      <div class="img-label strong"><span>Strong</span><span class="badge">ギャップ強め</span></div>
+      <div class="img-placeholder">
+        <div class="icon">⚡</div>
+        <div>Strong版</div>
+        <small>強めのギャップ</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Block F -->
+  <div class="block-header">
+    <span class="block-tag f">Block F</span>
+    <div>
+      <div class="block-title">比較評価・順位付け</div>
+      <div class="block-note">3枚を見比べて順位付けしてください</div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-id">F1</div>
+    <div class="q-text">「変化の量として適切」という観点で，3枚を順位付けしてください。</div>
+    <div class="q-note">最も変化量が適切なものを1位に選んでください。</div>
+    <div class="rank-group">
+      <div class="rank-label">1位（最も適切）</div>
+      <div class="rank-options" data-rank="f1_1">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f1_1')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f1_1')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f1_1')">Strong</button>
+      </div>
+    </div>
+    <div class="rank-group">
+      <div class="rank-label">2位</div>
+      <div class="rank-options" data-rank="f1_2">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f1_2')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f1_2')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f1_2')">Strong</button>
+      </div>
+    </div>
+    <div class="rank-group">
+      <div class="rank-label">3位（最も不適切）</div>
+      <div class="rank-options" data-rank="f1_3">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f1_3')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f1_3')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f1_3')">Strong</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="q-card highlight">
+    <div class="q-id">F2</div>
+    <div class="q-text">「ギャップ萌えを感じた」という観点で，3枚を順位付けしてください。</div>
+    <div class="rank-group">
+      <div class="rank-label">1位（最も萌えた）</div>
+      <div class="rank-options" data-rank="f2_1">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f2_1')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f2_1')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f2_1')">Strong</button>
+      </div>
+    </div>
+    <div class="rank-group">
+      <div class="rank-label">2位</div>
+      <div class="rank-options" data-rank="f2_2">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f2_2')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f2_2')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f2_2')">Strong</button>
+      </div>
+    </div>
+    <div class="rank-group">
+      <div class="rank-label">3位（最も萌えなかった）</div>
+      <div class="rank-options" data-rank="f2_3">
+        <button class="rank-btn soft" data-val="soft" onclick="selectRank(this,'f2_3')">Soft</button>
+        <button class="rank-btn medium" data-val="medium" onclick="selectRank(this,'f2_3')">Medium</button>
+        <button class="rank-btn strong" data-val="strong" onclick="selectRank(this,'f2_3')">Strong</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-id">F3</div>
+    <div class="q-text">F1とF2の1位が異なる場合，その理由を教えてください。</div>
+    <div class="q-note">同じ場合は空欄で構いません。「適切さ」と「萌え」がなぜ異なったのかを教えてください。</div>
+    <textarea id="f3_reason" class="free-text" placeholder="例：mediumが変化量としては適切だったが，strongの大胆なギャップの方が萌えを感じた..."></textarea>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(2)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(4)">属性入力へ →</button>
+  </div>
+</div>
+
+<!-- ========== SECTION 4：属性 ========== -->
+<div class="section" id="sec-attr">
+  <div class="phase-label"><span class="dot"></span> フェーズ 5 — 属性情報</div>
+  <h2 class="section-title">最後に，あなた自身について教えてください</h2>
+  <p class="section-desc">分析のためにお答えください。任意回答の項目は空欄でも構いません。</p>
+
+  <div class="block-header">
+    <span class="block-tag f">Block G</span>
+    <div><div class="block-title">被験者属性（分析用）</div></div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-id">G1</div>
+    <div class="q-text">アニメ・マンガを視聴・閲覧する頻度を教えてください。</div>
+    <div class="choice-list" id="g1-list">
+      <label class="choice-item radio"><input type="radio" name="g1" value="daily"><span class="choice-check">●</span>ほぼ毎日</label>
+      <label class="choice-item radio"><input type="radio" name="g1" value="weekly"><span class="choice-check">●</span>週に数回</label>
+      <label class="choice-item radio"><input type="radio" name="g1" value="monthly"><span class="choice-check">●</span>月に数回</label>
+      <label class="choice-item radio"><input type="radio" name="g1" value="rarely"><span class="choice-check">●</span>ほとんど見ない</label>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-id">G2</div>
+    <div class="q-text">キャラクターに感情移入しやすいですか？</div>
+    <div class="choice-list" id="g2-list">
+      <label class="choice-item radio"><input type="radio" name="g2" value="very"><span class="choice-check">●</span>とてもしやすい</label>
+      <label class="choice-item radio"><input type="radio" name="g2" value="somewhat"><span class="choice-check">●</span>ややしやすい</label>
+      <label class="choice-item radio"><input type="radio" name="g2" value="neutral"><span class="choice-check">●</span>どちらでもない</label>
+      <label class="choice-item radio"><input type="radio" name="g2" value="hard"><span class="choice-check">●</span>しにくい</label>
+    </div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-id">G3</div>
+    <div class="q-text">年齢・性別（任意）</div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div>
+        <label style="font-size:13px;color:var(--text-sub);display:block;margin-bottom:6px;">年齢</label>
+        <input id="g3_age" type="number" placeholder="例：21" min="10" max="99"
+          style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px 14px;font-size:14px;width:120px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:13px;color:var(--text-sub);display:block;margin-bottom:6px;">性別</label>
+        <input id="g3_gender" type="text" placeholder="任意記入"
+          style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px 14px;font-size:14px;width:160px;outline:none;">
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(3)">← 戻る</button>
+    <button class="btn btn-primary" id="submit-btn" onclick="submitSurvey()">回答を送信する ✓</button>
+  </div>
+  <div id="submit-status" class="notice" style="display:none; margin-top:18px;"><span class="notice-icon">📡</span><div id="submit-status-text">送信中です...</div></div>
+</div>
+
+<!-- ========== SECTION 5：完了 ========== -->
+<div class="section" id="sec-done">
+  <div class="complete-wrap">
+    <div class="complete-icon">🎉</div>
+    <h2 class="complete-title">ご回答ありがとうございました</h2>
+    <p class="complete-desc">
+      あなたの回答はギャップ萌えの研究に役立てられます。<br><br>
+      ご協力いただき，誠にありがとうございました。
+    </p>
+  </div>
+</div>
+
+</main>
+
+<script>
+  // 1) Google Apps Script を公開したら，このURLを差し替えてください。
+  // 2) 空欄のままだと，送信時にJSONファイルをローカル保存します。
+  window.SURVEY_CONFIG = {
+    endpointUrl: "",
+    studyId: "gap_moe_v1",
+    characterId: "takamiyarin_001",
+    conditionSet: "soft_medium_strong_001"
+  };
+</script>
+<script src="survey.js"></script>
+</body>
+</html>
